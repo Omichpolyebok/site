@@ -1,13 +1,13 @@
 <?php
 session_set_cookie_params([
-    'lifetime' => 0,           // cookie живёт до закрытия браузера
+    'lifetime' => 0,           
     'path' => '/',
-    'domain' => 'omkayaprica.shop', // замени на свой домен
-    'secure' => true,          // только по HTTPS
-    'httponly' => true,        // нельзя читать из JS
-    'samesite' => 'Strict'     // запрет кросс-сайтовых запросов
+    'domain' => 'omkayaprica.shop', 
+    'secure' => true,          
+    'httponly' => true,       
+    'samesite' => 'Strict'    
 ]);
- include 'header.php'; 
+ include '/var/www/mysite/inc/header.php'; 
 session_start();
 $db = new SQLite3('/var/www/mysite/db/users.db');
 
@@ -34,13 +34,8 @@ $reviews = $db->query("SELECT r.content, r.created_at, u.email
 <html lang="en">
 <head>
   <meta charset="utf-8">
+<link rel="stylesheet" href="style.css">
   <title>My Site</title>
-  <style>
-    body { font-family: sans-serif; margin: 2em; }
-    .review { border-bottom: 1px solid #ccc; padding: 1em 0; }
-    .author { font-weight: bold; }
-    form textarea { width: 100%; height: 80px; }
-  </style>
 </head>
 <body>
   <h1>Добро пожаловать на сайт!</h1>

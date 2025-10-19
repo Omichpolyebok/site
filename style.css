@@ -1,0 +1,101 @@
+/* Общие сбросы и базовые стили */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+/* Контейнер для форм и контента */
+.container {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+/* Заголовки */
+h1, h2, h3 {
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+/* Формы */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.form input {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form input:focus {
+  border-color: #007BFF;
+}
+
+/* Кнопки */
+button {
+  padding: 0.7rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  background-color: #007BFF;
+  color: #fff;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+/* Ссылки под формой */
+.form-footer {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.form-footer a {
+  color: #007BFF;
+  text-decoration: none;
+}
+
+.form-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 480px) {
+  .container {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+}
+

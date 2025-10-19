@@ -1,94 +1,95 @@
 <?php
-session_set_cookie_params([
-    'lifetime' => 0,           // cookie живёт до закрытия браузера
-    'path' => '/',
-    'domain' => 'omkayaprica.shop', // замени на свой домен
-    'secure' => true,          // только по HTTPS
-    'httponly' => true,        // нельзя читать из JS
-    'samesite' => 'Strict'     // запрет кросс-сайтовых запросов
-]);
- include 'header.php'; 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+require __DIR__ . '/inc/init.php'; // инициализация: сессия, $pdo, csrf, защита
+$errors = [];
+$success_message = '';
 
-
-// Путь к базе данных
-$db_path = '/var/www/mysite/db/users.db';
-
-// Проверяем, существует ли база
-if (!file_exists($db_path)) {
-    die("Database not found at $db_path");
+// сайт должен перенаправлять залогиненного
+if (!empty($_SESSION['user_id'])) {
+    header('Location: dashboard.php');
+    exit;
 }
 
-// Подключение к SQLite
-$db = new SQLite3($db_path);
-
-// Массив для ошибок
-$errors = [];
-
-// Если отправлена форма
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-
-    if ($email === '' || $password === '') {
-        $errors[] = "Email and password are required.";
+    // CSRF
+    if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) {
+        $errors[] = 'Invalid request (CSRF).';
+    } elseif (too_many_attempts()) {
+        $errors[] = 'Too many failed attempts. Try later.';
     } else {
-        // Подготовленный запрос
-        $stmt = $db->prepare('SELECT id, password FROM users WHERE email = :email');
-        $stmt->bindValue(':email', $email, SQLITE3_TEXT);
-        $result = $stmt->execute();
-        $row = $result->fetchArray(SQLITE3_ASSOC);
+$email = strtolower(trim($_POST['email'] ?? ''));
+        $password = $_POST['password'] ?? '';
 
-        if ($row && password_verify($password, $row['password'])) {
-	session_regenerate_id(true); // 👈 создаём новую сессию
-            $_SESSION['user_id'] = $row['id'];
-            $_SESSION['email'] = $email;
-            $success_message = "Login successful! Welcome, " . htmlspecialchars($email);
+        if ($email === '' || $password === '') {
+            $errors[] = 'Email and password are required.';
         } else {
-            $errors[] = "Invalid email or password.";
+            try {
+                $stmt = $pdo->prepare('SELECT id, password FROM users WHERE email = :email');
+                $stmt->execute([':email' => $email]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($row && password_verify($password, $row['password'])) {
+                    // успех
+                    session_regenerate_id(true);
+                    $_SESSION['user_id'] = $row['id'];
+                    $_SESSION['email'] = $email;
+                    reset_attempts();
+                    $success_message = 'Login successful! Welcome, ' . htmlspecialchars($email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                } else {
+                    $errors[] = 'Invalid email or password.';
+                    record_failed_attempt();
+                }
+            } catch (Exception $e) {
+                $errors[] = 'Server error. Try later.';
+            }
         }
     }
 }
 ?>
-
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Login</title>
+  <meta charset="utf-8">
+  <title>Login</title>
+<link rel="stylesheet" href="/style.css">
+
 </head>
 <body>
+<?php include __DIR__ . '/inc/header.php'; ?>
 
-<h1>Login</h1>
+<div class="container">
+  <h1>Вход</h1>
 
-<?php
-// Вывод ошибок
-if (!empty($errors)) {
-    echo "<ul style='color:red;'>";
-    foreach ($errors as $er) {
-        echo "<li>" . htmlspecialchars($er) . "</li>";
-    }
-    echo "</ul>";
-}
+  <?php if (!empty($errors)): ?>
+    <ul class="error-list">
+      <?php foreach ($errors as $er): ?>
+        <li><?= htmlspecialchars($er, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></li>
+      <?php endforeach; ?>
+    </ul>
+  <?php endif; ?>
 
-// Сообщение об успешном входе
-if (!empty($success_message)) {
-    echo "<p style='color:green;'>$success_message</p>";
-}
+  <?php if (!empty($success_message)): ?>
+    <p class="success-message"><?= $success_message ?></p>
+  <?php endif; ?>
 
-// Сообщение после регистрации
-if (isset($_GET['registered'])) {
-    echo '<p style="color:blue;">Registered — please login</p>';
-}
-?>
+  <?php if (isset($_GET['registered'])): ?>
+    <p class="info-message">Вы успешно зарегистрировались — пожалуйста, войдите</p>
+  <?php endif; ?>
 
-<form method="post">
-  Email: <input type="email" name="email" required><br><br>
-  Password: <input type="password" name="password" required><br><br>
-  <button type="submit">Login</button>
-</form>
+  <form method="post" autocomplete="off" class="form">
+    <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['csrf']) ?>">
 
+    <label>
+      <span>Email</span>
+      <input type="email" name="email" required>
+    </label>
+
+    <label>
+      <span>Пароль</span>
+      <input type="password" name="password" required>
+    </label>
+
+    <button type="submit">Войти</button>
+  </form>
+</div>
 </body>
 </html>
