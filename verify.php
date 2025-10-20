@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/inc/init.php';   // session + CSRF 
-require __DIR__ . '/src/db.php';     // $pdo
+//require __DIR__ . '/src/db.php';     // $pdo
 require __DIR__ . '/src/mail.php';   // sendVerificationCode()
 
 // авто-очистка просроченных кодов (безопасно выполнять при каждом заходе)

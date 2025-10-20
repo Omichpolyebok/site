@@ -208,7 +208,7 @@ reg_log("Rendering registration form");
 <head>
   <meta charset="utf-8">
   <title>Регистрация</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style_new.css">
 </head>
 <body>
   <div class="container">
