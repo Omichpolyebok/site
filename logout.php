@@ -2,7 +2,7 @@
 session_set_cookie_params([
     'lifetime' => 0,           // cookie живёт до закрытия браузера
     'path' => '/',
-    'domain' => 'omkayaprica.shop', // замени на свой домен
+    'domain' => 'omkayaprica.shop',
     'secure' => true,          // только по HTTPS
     'httponly' => true,        // нельзя читать из JS
     'samesite' => 'Strict'     // запрет кросс-сайтовых запросов
