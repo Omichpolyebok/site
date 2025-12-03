@@ -40,3 +40,8 @@ build/
 src/
 db/
 inc/
+        composer.json
+        composer.lock
+        logs/
+        register.php.save
+        test_send.php

@@ -1,95 +1,71 @@
 <?php
-require __DIR__ . '/inc/init.php'; // инициализация: сессия, $pdo, csrf, защита
-$errors = [];
-$success_message = '';
+// public/login.php
+session_start();
+require_once '/var/www/mysite/inc/header.php';
+require_once '/var/www/mysite/src/db.php';
 
-// сайт должен перенаправлять залогиненного
-if (!empty($_SESSION['user_id'])) {
-    header('Location: dashboard.php');
-    exit;
+$error = '';
+$message = '';
+
+if (isset($_GET['verified'])) {
+    $message = "Email подтвержден! Теперь вы можете войти.";
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // CSRF
-    if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) {
-        $errors[] = 'Invalid request (CSRF).';
-    } elseif (too_many_attempts()) {
-        $errors[] = 'Too many failed attempts. Try later.';
-    } else {
-$email = strtolower(trim($_POST['email'] ?? ''));
-        $password = $_POST['password'] ?? '';
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-        if ($email === '' || $password === '') {
-            $errors[] = 'Email and password are required.';
-        } else {
-            try {
-                $stmt = $pdo->prepare('SELECT id, password FROM users WHERE email = :email');
-                $stmt->execute([':email' => $email]);
-                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
 
-                if ($row && password_verify($password, $row['password'])) {
-                    // успех
-                    session_regenerate_id(true);
-                    $_SESSION['user_id'] = $row['id'];
-                    $_SESSION['email'] = $email;
-                    reset_attempts();
-                    $success_message = 'Login successful! Welcome, ' . htmlspecialchars($email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                } else {
-                    $errors[] = 'Invalid email or password.';
-                    record_failed_attempt();
-                }
-            } catch (Exception $e) {
-                $errors[] = 'Server error. Try later.';
+        if ($user && password_verify($password, $user['password'])) {
+            // Проверка подтверждения почты
+            if ($user['is_verified'] == 0) {
+                $error = "Пожалуйста, подтвердите ваш email перед входом.";
+            } else {
+                // ВСЁ ОК: Записываем данные в сессию
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['role'] = $user['role'];           // admin или resident
+                $_SESSION['full_name'] = $user['full_name']; // Для приветствия
+                $_SESSION['apartment'] = $user['apartment']; // Чтобы знать, чья заявка
+                
+                header("Location: index.php");
+                exit;
             }
+        } else {
+            $error = "Неверный email или пароль.";
         }
+    } catch (PDOException $e) {
+        $error = "Ошибка сервера.";
     }
 }
 ?>
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <title>Login</title>
-<link rel="stylesheet" href="/style_new.css">
-
+    <meta charset="UTF-8">
+    <title>Вход в ТСЖ</title>
+<link rel="stylesheet" href="style_new.css?v=<?= time() ?>">
+    <style>
+        .msg { color: green; margin-bottom: 15px; }
+        .error { color: red; margin-bottom: 15px; }
+    </style>
 </head>
 <body>
-<?php include __DIR__ . '/inc/header.php'; ?>
-
 <div class="container">
-  <h1>Вход</h1>
+    <h1>Вход</h1>
+    
+    <?php if ($message): ?><div class="msg"><?= htmlspecialchars($message) ?></div><?php endif; ?>
+    <?php if ($error): ?><div class="error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 
-  <?php if (!empty($errors)): ?>
-    <ul class="error-list">
-      <?php foreach ($errors as $er): ?>
-        <li><?= htmlspecialchars($er, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></li>
-      <?php endforeach; ?>
-    </ul>
-  <?php endif; ?>
-
-  <?php if (!empty($success_message)): ?>
-    <p class="success-message"><?= $success_message ?></p>
-  <?php endif; ?>
-
-  <?php if (isset($_GET['registered'])): ?>
-    <p class="info-message">Вы успешно зарегистрировались — пожалуйста, войдите</p>
-  <?php endif; ?>
-
-  <form method="post" autocomplete="off" class="form">
-    <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['csrf']) ?>">
-
-    <label>
-      <span>Email</span>
-      <input type="email" name="email" required>
-    </label>
-
-    <label>
-      <span>Пароль</span>
-      <input type="password" name="password" required>
-    </label>
-
-    <button type="submit">Войти</button>
-  </form>
+    <form method="post">
+        <label>Email <input type="email" name="email" required></label><br><br>
+        <label>Пароль <input type="password" name="password" required></label><br><br>
+        <button type="submit">Войти</button>
+    </form>
+    <p>Нет аккаунта? <a href="register.php">Регистрация</a></p>
 </div>
 </body>
 </html>

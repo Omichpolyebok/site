@@ -17,6 +17,9 @@ function sendVerificationCode(string $to, string $code): bool {
         $mail->SMTPSecure = isset($cfg['smtp_secure']) ? $cfg['smtp_secure'] : 'ssl';
         $mail->Port       = $cfg['smtp_port'] ?? 465;
 
+        $mail->CharSet = 'UTF-8';
+        $mail->Encoding = 'base64';
+
         // Важные параметры для стабильности
         $mail->Timeout = 10;                // сокет-таймаут (сек)
         $mail->SMTPKeepAlive = false;       // не держать соединение между вызовами
